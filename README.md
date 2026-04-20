@@ -1,216 +1,87 @@
-# README - Busca de Documentos em Rede
+# OFU Finder
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-funcional-success" />
-  <img src="https://img.shields.io/badge/version-V1.4-blue" />
-  <img src="https://img.shields.io/badge/python-3.11+-yellow" />
-  <img src="https://img.shields.io/badge/OCR-em%20evolução-orange" />
+  <img src="https://img.shields.io/badge/version-V1.2-blue" />
+  <img src="https://img.shields.io/badge/formato-.exe-lightgrey" />
 </p>
 
-## Sobre a aplicação
+---
 
-Esta aplicação em Python foi desenvolvida para facilitar a busca de documentos PDF dentro do diretório de rede:
+## Como executar
+
+A aplicação não precisa de instalação de Python na máquina do usuário.
+
+Basta executar o arquivo:
 
 ```text
-\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso
+busca_documentos.exe
 ```
 
-A ferramenta permite:
-
-- autenticação com usuário e senha de rede
-- busca aproximada da pasta do cliente
-- varredura completa dentro da pasta localizada
-- leitura interna de arquivos PDF
-- busca por palavra-chave específica (palavra inteira)
-- exibição do arquivo encontrado e da página onde a palavra foi localizada
-- interface simples com retorno estilo terminal (CMD)
-
-> Importante: a aplicação é um apoio operacional e não substitui a validação manual do usuário.
+Este executável já contém todas as dependências necessárias para funcionamento.
 
 ---
 
-## Requisitos
+## Onde encontrar o executável
 
-Antes de executar a aplicação, é necessário instalar:
-
-- Python 3.10 ou superior
-- biblioteca `pdfplumber`
-
----
-
-## 1. Instalando o Python
-
-### Baixe o Python
-
-Acesse o site oficial:
+Após a geração com PyInstaller, o arquivo ficará dentro da pasta:
 
 ```text
-https://www.python.org/downloads/
+dist
 ```
 
-Baixe a versão mais recente recomendada.
-
-### Durante a instalação
-
-Marque obrigatoriamente a opção:
+Exemplo:
 
 ```text
-☑ Add Python to PATH
+Projeto/
+├── dist/
+│   └── busca_documentos.exe
+├── build/
+├── busca_documentos.py
+└── README_EXECUTAVEL.md
 ```
 
-Depois clique em:
+O arquivo que deve ser utilizado e distribuído é:
 
 ```text
-Install Now
+dist\busca_documentos.exe
 ```
-
-Isso evita diversos problemas futuros.
-
----
-
-## 2. Verificando se o Python foi instalado
-
-Abra o Prompt de Comando (CMD):
-
-```text
-Win + R
-→ digite: cmd
-→ pressione Enter
-```
-
-Digite:
-
-```bash
-python --version
-```
-
-Se aparecer algo como:
-
-```text
-Python 3.12.1
-```
-
-está tudo certo.
-
----
-
-## 3. Instalando a biblioteca necessária
-
-No CMD, execute:
-
-```bash
-pip install pdfplumber
-```
-
-Se ocorrer erro com `pip`, tente:
-
-```bash
-python -m pip install pdfplumber
-```
-
-ou
-
-```bash
-py -m pip install pdfplumber
-```
-
----
-
-## 4. Validando a instalação
-
-Para confirmar:
-
-```bash
-pip show pdfplumber
-```
-
-Se aparecer informações como Name, Version e Location, a instalação foi concluída com sucesso.
-
----
-
-## 5. Como executar a aplicação
-
-Salve o arquivo principal como:
-
-```text
-busca_documentos.py
-```
-
-Depois execute no CMD:
-
-```bash
-python busca_documentos.py
-```
-
-A tela da aplicação será aberta.
 
 ---
 
 ## Como utilizar
 
-Preencha os campos:
+1. Abra o executável `busca_documentos.exe`
+2. Preencha os campos obrigatórios:
 
-- Usuário de Rede
-- Senha
-- Cliente
-- Palavra-chave
-
-Depois clique em:
-
-```text
-Buscar
-```
-
-A aplicação irá:
-
-1. autenticar na rede
-2. localizar a pasta do cliente
-3. abrir os PDFs encontrados
-4. buscar a palavra-chave dentro dos documentos
-5. mostrar os resultados encontrados
+   * Usuário de Rede
+   * Senha
+   * Cliente
+   * Palavra-chave
+3. Clique em **Buscar**
+4. Aguarde a autenticação e a varredura dos PDFs
+5. Verifique os resultados exibidos no painel inferior estilo terminal
 
 ---
 
-## Observações importantes
+## Importante
 
-### A busca é feita por palavra inteira
+Mesmo utilizando o `.exe`, ainda é necessário:
 
-Exemplo:
+* possuir acesso à rede corporativa
+* ter permissão no compartilhamento de rede
+* informar corretamente usuário e senha de rede
 
-Buscar por:
-
-```text
-contrato
-```
-
-Encontra exatamente a palavra desejada, evitando resultados muito aproximados.
-
----
-
-### PDFs digitalizados podem falhar
-
-Alguns PDFs são imagens escaneadas e podem não permitir leitura correta.
-
-Nestes casos:
-
-- podem ocorrer falhas
-- pode ser necessária análise manual
+A aplicação depende dessas permissões para localizar os documentos.
 
 ---
 
 ## Disclaimer
 
-Esta ferramenta ainda necessita de testes e não garante 100% de precisão em todos os cenários.
+A ferramenta é um apoio operacional e não substitui a análise manual do usuário.
 
-Ela não substitui a análise humana.
+Ela pode apresentar limitações dependendo da qualidade dos arquivos PDF, estrutura de pastas ou critérios de pesquisa utilizados.
 
-Caso nenhum resultado seja encontrado, a validação e ação manual continuam sendo obrigatórias.
+Caso nenhum resultado seja encontrado, a validação manual continua sendo necessária.
 
-A ferramenta não pensa pelo usuário — ela apenas auxilia e facilita o processo.
-
----
-
-## Autor
-
-Aplicação interna para apoio operacional de busca documental.
-
+A responsabilidade da conferência final permanece sempre com o usuário.
