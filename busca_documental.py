@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 import subprocess
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
@@ -12,6 +13,9 @@ REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
 
 # Extensões permitidas (V1 simples)
 EXTENSOES = [".pdf", ".txt", ".docx"]
+
+# Arquivo de base de busca
+BASE_BUSCA_FILE = "base_busca.xlsx"
 
 
 # =============================
@@ -39,6 +43,32 @@ def autenticar_rede(usuario, senha):
     except Exception as e:
         return False, str(e)
 
+
+
+def carregar_base_busca():
+    """
+    Lê a base de busca em Excel.
+    Estrutura esperada:
+    coluna 1: termo_digitado
+    coluna 2: variacoes_busca
+    """
+    try:
+        if not os.path.exists(BASE_BUSCA_FILE):
+            return {}
+
+        df = pd.read_excel(BASE_BUSCA_FILE)
+        base = {}
+
+        for _, row in df.iterrows():
+            termo = str(row["termo_digitado"]).strip().lower()
+            variacoes = str(row["variacoes_busca"]).strip().lower().split(";")
+            base[termo] = [v.strip() for v in variacoes if v.strip()]
+
+        return base
+
+    except Exception as e:
+        print(f"Erro ao carregar base de busca: {e}")
+        return {}
 
 
 def localizar_pasta_cliente(nome_cliente):
@@ -72,6 +102,13 @@ def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
     """
     resultados = []
 
+    base = carregar_base_busca()
+
+    if termo_busca.lower() in base:
+        termos_para_busca = [termo_busca.lower()] + base[termo_busca.lower()]
+    else:
+        termos_para_busca = [termo_busca.lower()]
+
     for root, _, files in os.walk(pasta_cliente):
         for arquivo in files:
             caminho = os.path.join(root, arquivo)
@@ -86,7 +123,7 @@ def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
                     with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
                         conteudo = f.read()
 
-                        if termo_busca.lower() in conteudo.lower():
+                        if any(t in conteudo.lower() for t in termos_para_busca):
                             trecho = conteudo[:500]
                             resultados.append(
                                 f"\nArquivo: {caminho}\n"
@@ -162,6 +199,8 @@ root = tk.Tk()
 root.title("Busca Documental V1")
 root.geometry("800x650")
 
+VERSAO_ATUAL = "Versão atual: V1.1"
+
 # Login
 
 tk.Label(root, text="Usuário de Rede").pack(pady=(10, 0))
@@ -197,6 +236,9 @@ btn_buscar.pack(pady=20)
 
 resultado_texto = scrolledtext.ScrolledText(root, width=90, height=20)
 resultado_texto.pack(padx=10, pady=10)
+
+label_versao = tk.Label(root, text=VERSAO_ATUAL)
+label_versao.pack(pady=(0, 10))
 
 
 root.mainloop()
