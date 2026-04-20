@@ -9,14 +9,12 @@ from pathlib import Path
 # =============================
 REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
 
+
 # =============================
 # FUNÇÕES
 # =============================
 
 def conectar_rede(usuario, senha):
-    """
-    Faz autenticação no compartilhamento de rede usando net use
-    """
     try:
         comando = [
             "net",
@@ -43,69 +41,37 @@ def conectar_rede(usuario, senha):
 
 
 def buscar_arquivos(cliente, palavra_chave):
-    """
-    Busca a pasta do cliente de forma aproximada considerando
-    múltiplas palavras e procura a palavra-chave DENTRO dos PDFs,
-    também aceitando múltiplas palavras.
-
-    Exemplo:
-    cliente = "banco itau"
-    palavra_chave = "termo adesao"
-
-    A busca entende:
-    - palavras juntas
-    - palavras separadas
-    - ordem aproximada
-    """
-
     import pdfplumber
     import re
 
     resultados = []
 
     cliente_digitado = cliente.strip().lower()
-    palavra_chave_digitada = palavra_chave.strip().lower()
+    palavra_digitada = palavra_chave.strip().lower()
 
     palavras_cliente = cliente_digitado.split()
-    palavras_chave = palavra_chave_digitada.split()
+    palavras_chave = palavra_digitada.split()
 
     pasta_encontrada = None
 
-    # =============================
-    # BUSCA APROXIMADA DA PASTA CLIENTE
-    # =============================
-
     for item in Path(REDE_PATH).iterdir():
         if item.is_dir():
-            nome_pasta = item.name.lower()
-
-            nome_tratado = (
-                nome_pasta
+            nome = (
+                item.name.lower()
                 .replace("_", " ")
                 .replace("-", " ")
                 .replace(".", " ")
             )
 
-            # considera match se várias palavras estiverem presentes
-            if all(palavra in nome_tratado for palavra in palavras_cliente):
+            if all(p in nome for p in palavras_cliente):
                 pasta_encontrada = item
                 break
 
     if not pasta_encontrada:
-        return [f"Nenhuma pasta semelhante encontrada para: {cliente}"]
+        return [f"Nenhuma pasta encontrada para: {cliente}"]
 
-    resultados.append(f"Pasta encontrada: {pasta_encontrada}\n")
-    resultados.append("Iniciando varredura completa dos PDFs...\n")
-
-    # =============================
-    # REGEX PARA PALAVRA-CHAVE
-    # =============================
-
-    # aceita:
-    # termo adesao
-    # termo_de_adesao
-    # termo-adesao
-    # termo    adesao
+    resultados.append(f"Pasta encontrada: {pasta_encontrada}")
+    resultados.append("Iniciando busca nos PDFs...\n")
 
     termo_regex = r"\s+".join(
         [re.escape(p) for p in palavras_chave]
@@ -116,10 +82,6 @@ def buscar_arquivos(cliente, palavra_chave):
         re.IGNORECASE
     )
 
-    # =============================
-    # VARREDURA DOS PDFs
-    # =============================
-
     for root, dirs, files in os.walk(pasta_encontrada):
         for arquivo in files:
             if not arquivo.lower().endswith(".pdf"):
@@ -129,18 +91,14 @@ def buscar_arquivos(cliente, palavra_chave):
 
             try:
                 with pdfplumber.open(caminho_pdf) as pdf:
-
                     for numero_pagina, pagina in enumerate(pdf.pages, start=1):
                         texto = pagina.extract_text()
 
                         if not texto:
                             continue
 
-                        texto = texto.lower()
-
-                        # normalização simples
                         texto = (
-                            texto
+                            texto.lower()
                             .replace("_", " ")
                             .replace("-", " ")
                             .replace(".", " ")
@@ -163,30 +121,25 @@ def buscar_arquivos(cliente, palavra_chave):
         )
 
     resultados.append("\nBusca finalizada.")
-
     return resultados
 
 
 def executar_busca():
-    usuario = entry_usuario.get().strip()
+    # Agora o usuário digita apenas o login
+    usuario = f"WHEBDC\\{entry_usuario.get().strip()}"
     senha = entry_senha.get().strip()
     cliente = entry_cliente.get().strip()
-    palavra_chave = entry_palavra.get().strip()
+    palavra = entry_palavra.get().strip()
 
-    if not all([usuario, senha, cliente, palavra_chave]):
+    if not all([entry_usuario.get().strip(), senha, cliente, palavra]):
         messagebox.showwarning(
             "Campos obrigatórios",
             "Preencha todos os campos."
         )
         return
 
-    # LIMPA O PROMPT SEMPRE QUE CLICAR EM BUSCAR
     resultado_texto.delete(1.0, tk.END)
-
-    resultado_texto.insert(
-        tk.END,
-        "Conectando na rede...\n"
-    )
+    resultado_texto.insert(tk.END, "Conectando na rede...\n")
 
     sucesso, msg = conectar_rede(usuario, senha)
 
@@ -202,18 +155,10 @@ def executar_busca():
         f"{msg}\n\nIniciando busca...\n\n"
     )
 
-    resultados = buscar_arquivos(cliente, palavra_chave)
+    resultados = buscar_arquivos(cliente, palavra)
 
     for item in resultados:
-        resultado_texto.insert(
-            tk.END,
-            item + "\n"
-        )
-
-    resultado_texto.insert(
-        tk.END,
-        "\nBusca finalizada conteúdos."
-    )
+        resultado_texto.insert(tk.END, item + "\n")
 
 
 # =============================
@@ -224,6 +169,12 @@ janela = tk.Tk()
 janela.title("Busca de Documentos em Rede")
 janela.geometry("850x600")
 janela.resizable(True, True)
+
+# Ícone da aplicação
+try:
+    janela.iconbitmap("C:\\Users\\320128547\\Desktop\\OFU Finder\\yoshi.ico")
+except:
+    pass
 
 # Frame principal
 frame = tk.Frame(janela, padx=20, pady=20)
@@ -261,10 +212,23 @@ disclaimer = tk.Label(
 
 disclaimer.pack(fill="x", pady=(0, 15))
 
-# Usuário
+# =============================
+# USUÁRIO DE REDE (com domínio fixo)
+# =============================
+
 tk.Label(frame, text="Usuário de Rede").pack(anchor="w")
-entry_usuario = tk.Entry(frame, width=50)
-entry_usuario.pack(fill="x", pady=(0, 10))
+
+frame_usuario = tk.Frame(frame)
+frame_usuario.pack(fill="x", pady=(0, 10))
+
+tk.Label(
+    frame_usuario,
+    text="WHEBDC\\",
+    font=("Arial", 10, "bold")
+).pack(side="left")
+
+entry_usuario = tk.Entry(frame_usuario, width=50)
+entry_usuario.pack(side="left", fill="x", expand=True)
 
 # Senha
 tk.Label(frame, text="Senha").pack(anchor="w")
