@@ -7,104 +7,119 @@ from pathlib import Path
 # =============================
 # CONFIGURAÇÃO
 # =============================
-# Ajuste aqui o caminho raiz da rede
 REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
-
-# Extensões permitidas (V1 simples)
-EXTENSOES = [".pdf", ".txt", ".docx"]
-
-# Versão da aplicação
-VERSAO = "V1.3"
-
 
 # =============================
 # FUNÇÕES
 # =============================
 
-def autenticar_rede(usuario, senha):
+def conectar_rede(usuario, senha):
     """
-    Faz autenticação simples na rede usando net use.
+    Faz autenticação no compartilhamento de rede usando net use
     """
     try:
-        comando = f'net use {REDE_PATH} /user:{usuario} {senha}'
+        comando = [
+            "net",
+            "use",
+            REDE_PATH,
+            senha,
+            f"/user:{usuario}"
+        ]
+
         resultado = subprocess.run(
             comando,
-            shell=True,
             capture_output=True,
-            text=True
+            text=True,
+            shell=True
         )
 
-        if resultado.returncode == 0:
-            return True, "Autenticação realizada com sucesso."
-        else:
-            return False, resultado.stderr or resultado.stdout
+        if resultado.returncode != 0:
+            return False, resultado.stderr.strip()
+
+        return True, "Conectado com sucesso."
 
     except Exception as e:
         return False, str(e)
 
 
-def localizar_pasta_cliente(nome_cliente):
+def buscar_arquivos(cliente, palavra_chave):
     """
-    Procura uma pasta que contenha o nome informado.
-    Busca simples por substring.
+    Busca a pasta do cliente de forma aproximada
+    e procura a palavra-chave DENTRO dos PDFs
+    (palavra inteira e ignorando maiúsculas/minúsculas)
+    
+    Requer:
+        pip install pdfplumber
     """
-    try:
-        raiz = Path(REDE_PATH)
 
-        if not raiz.exists():
-            return None
+    import pdfplumber
+    import re
 
-        for pasta in raiz.iterdir():
-            if pasta.is_dir() and nome_cliente.lower() in pasta.name.lower():
-                return pasta
-
-        return None
-
-    except Exception:
-        return None
-
-
-def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
-    """
-    V1 SIMPLES:
-    Busca apenas em arquivos TXT.
-
-    PDFs escaneados + OCR entram na V2.
-    """
     resultados = []
 
-    for root, _, files in os.walk(pasta_cliente):
-        for arquivo in files:
-            caminho = os.path.join(root, arquivo)
-            ext = Path(caminho).suffix.lower()
+    cliente_digitado = cliente.strip().lower()
+    palavra_chave = palavra_chave.strip().lower()
 
-            if ext not in EXTENSOES:
+    pasta_encontrada = None
+
+    # localizar pasta do cliente de forma aproximada
+    for item in Path(REDE_PATH).iterdir():
+        if item.is_dir():
+            nome_pasta = item.name.lower()
+
+            if (
+                cliente_digitado in nome_pasta
+                or nome_pasta in cliente_digitado
+                or any(parte in nome_pasta for parte in cliente_digitado.split())
+            ):
+                pasta_encontrada = item
+                break
+
+    if not pasta_encontrada:
+        return [f"Nenhuma pasta semelhante encontrada para: {cliente}"]
+
+    resultados.append(f"Pasta encontrada: {pasta_encontrada}\n")
+    resultados.append("Iniciando varredura completa dos PDFs...\n")
+
+    # regex para palavra inteira
+    padrao = re.compile(rf"\b{re.escape(palavra_chave)}\b", re.IGNORECASE)
+
+    # percorre toda a estrutura da pasta encontrada
+    for root, dirs, files in os.walk(pasta_encontrada):
+        for arquivo in files:
+            if not arquivo.lower().endswith(".pdf"):
                 continue
 
-            # V1 funcional: leitura direta apenas TXT
-            if ext == ".txt":
-                try:
-                    with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
-                        conteudo = f.read()
+            caminho_pdf = os.path.join(root, arquivo)
 
-                        if termo_busca.lower() in conteudo.lower():
-                            trecho = conteudo[:500]
+            try:
+                with pdfplumber.open(caminho_pdf) as pdf:
+                    encontrado = False
+
+                    for numero_pagina, pagina in enumerate(pdf.pages, start=1):
+                        texto = pagina.extract_text()
+
+                        if not texto:
+                            continue
+
+                        if padrao.search(texto):
                             resultados.append(
-                                f"\nArquivo: {caminho}\n"
-                                f"Trecho inicial:\n{trecho}\n"
-                                f"{'-'*60}\n"
+                                f"[PDF ENCONTRADO] {caminho_pdf} | Página: {numero_pagina}"
                             )
-                except Exception:
-                    pass
+                            encontrado = True
+                            break  # para no primeiro match dentro do PDF
 
-            else:
-                # PDF/DOCX ficam preparados para V2
+            except Exception as e:
                 resultados.append(
-                    f"\nArquivo encontrado (leitura futura V2): {caminho}\n"
-                    f"Tipo: {ext}\n"
-                    f"Observação: OCR/leitura avançada será implementado na próxima versão.\n"
-                    f"{'-'*60}\n"
+                    f"[ERRO AO LER PDF] {caminho_pdf} -> {str(e)}"
                 )
+
+    if len(resultados) <= 2:
+        resultados.append(
+            "Nenhum PDF encontrado contendo essa palavra-chave."
+        )
+
+    resultados.append("\nBusca finalizada cliente.")
 
     return resultados
 
@@ -113,129 +128,134 @@ def executar_busca():
     usuario = entry_usuario.get().strip()
     senha = entry_senha.get().strip()
     cliente = entry_cliente.get().strip()
-    nome_busca = entry_nome.get().strip()
+    palavra_chave = entry_palavra.get().strip()
 
-    if not all([usuario, senha, cliente, nome_busca]):
-        messagebox.showwarning("Atenção", "Preencha todos os campos.")
+    if not all([usuario, senha, cliente, palavra_chave]):
+        messagebox.showwarning(
+            "Campos obrigatórios",
+            "Preencha todos os campos."
+        )
         return
 
-    resultado_texto.delete("1.0", tk.END)
-    resultado_texto.insert(tk.END, "Autenticando na rede...\n")
-    root.update()
+    # LIMPA O PROMPT SEMPRE QUE CLICAR EM BUSCAR
+    resultado_texto.delete(1.0, tk.END)
 
-    ok, msg = autenticar_rede(usuario, senha)
+    resultado_texto.insert(
+        tk.END,
+        "Conectando na rede...\n"
+    )
 
-    if not ok:
-        messagebox.showerror("Erro de autenticação", msg)
+    sucesso, msg = conectar_rede(usuario, senha)
+
+    if not sucesso:
+        resultado_texto.insert(
+            tk.END,
+            f"\nErro na autenticação:\n{msg}\n"
+        )
         return
 
-    resultado_texto.insert(tk.END, "Autenticação realizada com sucesso.\n\n")
-    resultado_texto.insert(tk.END, f"Procurando pasta do cliente: {cliente}\n")
-    root.update()
+    resultado_texto.insert(
+        tk.END,
+        f"{msg}\n\nIniciando busca...\n\n"
+    )
 
-    pasta = localizar_pasta_cliente(cliente)
+    resultados = buscar_arquivos(cliente, palavra_chave)
 
-    if not pasta:
-        messagebox.showinfo("Não encontrado", "Pasta do cliente não localizada.")
-        return
+    for item in resultados:
+        resultado_texto.insert(
+            tk.END,
+            item + "\n"
+        )
 
-    resultado_texto.insert(tk.END, f"Pasta encontrada:\n{pasta}\n\n")
-    resultado_texto.insert(tk.END, f"Buscando por: {nome_busca}\n")
-    resultado_texto.insert(tk.END, "Aguarde...\n\n")
-    root.update()
-
-    resultados = buscar_nome_em_arquivos(str(pasta), nome_busca)
-
-    if resultados:
-        resultado_texto.insert(tk.END, "RESULTADOS ENCONTRADOS:\n")
-        for item in resultados:
-            resultado_texto.insert(tk.END, item)
-    else:
-        resultado_texto.insert(tk.END, "Nenhum resultado encontrado.\n")
+    resultado_texto.insert(
+        tk.END,
+        "\nBusca finalizada conteúdos."
+    )
 
 
 # =============================
 # INTERFACE
 # =============================
 
-root = tk.Tk()
-root.title("OFU Finder V1.3")
-root.geometry("800x750")  # aumentei um pouco para comportar o disclaimer
+janela = tk.Tk()
+janela.title("Busca de Documentos em Rede")
+janela.geometry("850x600")
+janela.resizable(True, True)
+
+# Frame principal
+frame = tk.Frame(janela, padx=20, pady=20)
+frame.pack(fill="both", expand=True)
+
+# Título
+titulo = tk.Label(
+    frame,
+    text="Busca de Arquivos - Oficializações",
+    font=("Arial", 14, "bold")
+)
+titulo.pack(pady=(0, 15))
 
 # =============================
 # DISCLAIMER
 # =============================
 
-disclaimer_texto = (
-    "DISCLAIMER:\n"
-    "Esta aplicação realiza buscas automatizadas e pode apresentar erros de interpretação "
-    "devido à qualidade dos arquivos, digitalização, OCR, estrutura do documento ou método "
-    "de pesquisa utilizado.\n\n"
-    "Os resultados apresentados servem apenas como apoio à análise e NÃO substituem a "
-    "validação manual do usuário.\n\n"
-    "A aplicação não deve limitar a análise crítica, sendo indispensável que o usuário "
-    "revise, confira e valide cuidadosamente todas as informações retornadas antes de "
-    "qualquer decisão ou conclusão."
-)
-
-disclaimer_label = tk.Label(
-    root,
-    text=disclaimer_texto,
+disclaimer = tk.Label(
+    frame,
+    text=(
+        "DISCLAIMER: Esta ferramenta é um apoio operacional e facilitador de busca, "
+        "não substituindo a análise manual do usuário. Podem ocorrer falhas de leitura, "
+        "interpretação ou localização de arquivos devido à qualidade dos PDFs, "
+        "digitalizações, estrutura de pastas ou critérios de pesquisa utilizados.\n\n"
+        "A ferramenta ainda necessita de testes e não garante 100% de precisão em todos os casos. "
+        "Caso nenhum resultado seja encontrado, é necessária a validação e ação manual pelo usuário. "
+        "A responsabilidade da conferência final sempre deve ser humana."
+    ),
     font=("Arial", 9),
-    fg="darkred",
+    fg="red",
     justify="left",
-    wraplength=760,
-    padx=10,
-    pady=10,
-    relief="solid",
-    bd=1
+    wraplength=780,
+    anchor="w"
 )
-disclaimer_label.pack(padx=10, pady=(10, 5), fill="x")
 
-# Login
+disclaimer.pack(fill="x", pady=(0, 15))
 
-tk.Label(root, text="Usuário de Rede").pack(pady=(10, 0))
-entry_usuario = tk.Entry(root, width=50)
-entry_usuario.pack()
+# Usuário
+tk.Label(frame, text="Usuário de Rede").pack(anchor="w")
+entry_usuario = tk.Entry(frame, width=50)
+entry_usuario.pack(fill="x", pady=(0, 10))
 
+# Senha
+tk.Label(frame, text="Senha").pack(anchor="w")
+entry_senha = tk.Entry(frame, width=50, show="*")
+entry_senha.pack(fill="x", pady=(0, 10))
 
-tk.Label(root, text="Senha").pack(pady=(10, 0))
-entry_senha = tk.Entry(root, width=50, show="*")
-entry_senha.pack()
+# Cliente
+tk.Label(frame, text="Cliente").pack(anchor="w")
+entry_cliente = tk.Entry(frame, width=50)
+entry_cliente.pack(fill="x", pady=(0, 10))
 
-# Busca
+# Palavra-chave
+tk.Label(frame, text="Palavra-chave").pack(anchor="w")
+entry_palavra = tk.Entry(frame, width=50)
+entry_palavra.pack(fill="x", pady=(0, 15))
 
-tk.Label(root, text="Nome do Cliente").pack(pady=(20, 0))
-entry_cliente = tk.Entry(root, width=60)
-entry_cliente.pack()
-
-
-tk.Label(root, text="Nome a Buscar").pack(pady=(10, 0))
-entry_nome = tk.Entry(root, width=60)
-entry_nome.pack()
-
-
+# Botão
 btn_buscar = tk.Button(
-    root,
-    text="Pesquisar",
+    frame,
+    text="Buscar",
+    font=("Arial", 10, "bold"),
     command=executar_busca,
-    width=20,
     height=2
 )
-btn_buscar.pack(pady=20)
+btn_buscar.pack(fill="x", pady=(0, 15))
 
-
-resultado_texto = scrolledtext.ScrolledText(root, width=90, height=20)
-resultado_texto.pack(padx=10, pady=10)
-
-# Rodapé com versão
-rodape = tk.Label(
-    root,
-    text=f"Versão {VERSAO}",
-    font=("Arial", 9),
-    fg="gray"
+# Área de resultado estilo CMD
+resultado_texto = scrolledtext.ScrolledText(
+    frame,
+    height=20,
+    bg="black",
+    fg="lime",
+    font=("Consolas", 10)
 )
-rodape.pack(side="bottom", pady=5)
+resultado_texto.pack(fill="both", expand=True)
 
-
-root.mainloop()
+janela.mainloop()
