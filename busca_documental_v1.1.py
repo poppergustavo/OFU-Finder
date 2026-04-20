@@ -15,7 +15,7 @@ REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
 EXTENSOES = [".pdf", ".txt", ".docx"]
 
 # Arquivo de base de busca
-BASE_BUSCA_FILE = "base_busca.xlsx"
+BASE_BUSCA_FILE = r"C:\Users\320128547\Desktop\OFU Finder\funcoes.xlsx"
 
 
 # =============================
