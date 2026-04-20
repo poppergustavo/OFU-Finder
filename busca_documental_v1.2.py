@@ -14,7 +14,7 @@ REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
 EXTENSOES = [".pdf", ".txt", ".docx"]
 
 # Versão da aplicação
-VERSAO = "V1.2"
+VERSAO = "V1.3"
 
 
 # =============================
@@ -159,7 +159,7 @@ def executar_busca():
 # =============================
 
 root = tk.Tk()
-root.title("Busca Documental V1")
+root.title("OFU Finder V1.3")
 root.geometry("800x750")  # aumentei um pouco para comportar o disclaimer
 
 # =============================

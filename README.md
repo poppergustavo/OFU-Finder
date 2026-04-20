@@ -1,48 +1,51 @@
-# 🔎 Busca Documental V1.1
+# 🔎 Busca Documental V1.3
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-funcional-success" />
-  <img src="https://img.shields.io/badge/version-V1.1-blue" />
+  <img src="https://img.shields.io/badge/version-V1.2-blue" />
   <img src="https://img.shields.io/badge/python-3.11+-yellow" />
-  <img src="https://img.shields.io/badge/OCR-V2%20em%20breve-orange" />
+  <img src="https://img.shields.io/badge/OCR-em%20evolução-orange" />
 </p>
 
 <p align="center">
   <b>Aplicação interna para busca documental em rede corporativa</b><br>
-  com autenticação manual, localização de pastas de clientes e busca inteligente em arquivos.
+  com autenticação manual, localização de pastas de clientes e busca em arquivos.
 </p>
 
 ---
 
-## ✨ Sobre o Projeto
+## ✨ Sobre
 
-A aplicação foi criada para facilitar a localização de informações dentro de diretórios de rede internos.
+A aplicação permite localizar informações dentro de diretórios de rede internos de forma rápida e simples.
+
+⚠️ Para funcionamento correto, é necessário ter o **Python instalado na máquina**.
 
 O usuário informa:
 
 * usuário de rede
-* senha de rede
+* senha
 * nome do cliente
-* nome/termo que deseja buscar
+* termo a ser pesquisado
 
 E o sistema:
 
-✅ autentica na rede interna
+✅ autentica na rede
 ✅ localiza a pasta do cliente
 ✅ percorre arquivos e subpastas
-✅ utiliza base de referência inteligente (`base_busca.xlsx`)
-✅ retorna os resultados encontrados
+✅ realiza busca em arquivos `.txt`
+✅ identifica `.pdf` e `.docx` para leitura futura
+✅ exibe os resultados em tela
 
 ---
 
-## 🚀 Fluxo de Uso
+## 🚀 Como Funciona
 
 ```text
 Login de Rede
    ↓
 Busca do Cliente
    ↓
-Busca do Nome/Termo
+Pesquisa do Termo
    ↓
 Varredura de Arquivos
    ↓
@@ -53,7 +56,7 @@ Resultado em Tela
 
 ## 🖥️ Interface
 
-Tela simples e funcional:
+Interface simples e objetiva:
 
 ```text
 Usuário de Rede
@@ -62,119 +65,40 @@ Nome do Cliente
 Nome a Buscar
 [Pesquisar]
 
-Resultado da Busca
+Resultados da Busca
 
-Versão atual: V1.1
+Versão atual: V1.2
 ```
 
-Foco total em produtividade e uso rápido.
+Inclui também um aviso de **disclaimer**, reforçando que os resultados devem sempre ser conferidos manualmente.
 
 ---
 
-## 📁 Estrutura Esperada
+## ⚙️ Requisito Obrigatório
 
-```text
-C:\BuscaDocumental\
-│
-├── busca_documental_v1.py
-├── base_busca.xlsx
-└── README.md
-```
-
----
-
-## 📊 Base Inteligente de Busca
-
-Arquivo:
-
-```text
-base_busca.xlsx
-```
-
-Estrutura da planilha:
-
-| termo_digitado | variacoes_busca                           |
-| -------------- | ----------------------------------------- |
-| CPOE           | cpoe; ordem médica; prescrição eletrônica |
-| TASY           | tasy; sistema tasy; erp philips           |
-| NIR            | nir; núcleo interno de regulação          |
-
-### Benefício
-
-Ao buscar:
-
-```text
-CPOE
-```
-
-O sistema também pode procurar por:
-
-* ordem médica
-* prescrição eletrônica
-* variações cadastradas
-
-Isso reduz falsos positivos e melhora a precisão.
-
----
-
-## ⚙️ Instalação
-
-## 1. Instalar Python
-
-Recomendado:
+Antes de executar a aplicação, é necessário instalar:
 
 ```text
 Python 3.11+
 ```
 
-Durante a instalação marcar:
+Durante a instalação, marcar:
 
 ```text
 ✓ Add Python to PATH
 ```
 
----
-
-## 2. Instalar bibliotecas
-
-Execute no terminal:
-
-```bash
-pip install pandas openpyxl
-```
-
-> V1 utiliza leitura simples e base Excel.
-> OCR e leitura avançada de PDF entram na V2.
-
----
-
-## 3. Ajustar caminho da rede
-
-No código:
-
-```python
-REDE_PATH = r"\\servidor\clientes"
-```
-
-Alterar para o caminho real da empresa.
-
-Exemplo:
-
-```python
-REDE_PATH = r"\\srv-files\clientes"
-```
+Sem o Python instalado, a aplicação não será executada.
 
 ---
 
 ## ▶️ Execução
 
-Basta executar:
+Execute:
 
 ```bash
 python busca_documental_v1.py
 ```
-
-ou dar duplo clique no arquivo `.py`
 
 ---
 
@@ -184,85 +108,33 @@ A senha informada:
 
 * não é salva
 * não vai para logs
-* não vai para banco
+* não é armazenada
 * é usada apenas na sessão atual
-
-Foco total em segurança corporativa.
-
----
-
-## 🧠 Tecnologias Utilizadas
-
-* Python
-* Tkinter
-* Pandas
-* OpenPyXL
-* Subprocess
-* Pathlib
-* OS
 
 ---
 
 ## 🛣️ Roadmap
 
-## V1.1 (Atual)
+### V1.2 (Atual)
 
 * [x] autenticação manual
 * [x] busca por cliente
-* [x] varredura inicial
-* [x] base inteligente com Excel
-* [x] interface funcional
-* [x] controle de versão no rodapé
+* [x] leitura de arquivos `.txt`
+* [x] identificação de `.pdf` e `.docx`
+* [x] interface com versão no rodapé
+* [x] disclaimer de validação manual
 
-## V2 (Próxima)
+### Próximas versões
 
-* [ ] OCR real para PDF escaneado
+* [ ] OCR para PDFs escaneados
 * [ ] leitura completa de PDF
-* [ ] busca fuzzy avançada
-* [ ] exportação para Excel
-* [ ] cache de OCR
+* [ ] busca mais inteligente
+* [ ] exportação de resultados
 * [ ] versão `.exe`
-
-## V3 (Futuro)
-
-* [ ] dashboard corporativo
-* [ ] integração com ServiceNow
-* [ ] IA semântica documental
-* [ ] indexação automática
-
----
-
-## 💡 Nome Corporativo Bonito para Reunião
-
-```text
-Enterprise Document Search Engine
-```
-
-ou
-
-```text
-Intelligent OCR Search Platform
-```
-
-soa importante e geralmente ajuda bastante 😄
-
----
-
-## 👨‍💻 Observação Final
-
-Essa V1 foi criada com foco em:
-
-> simplicidade + funcionalidade + evolução futura
-
-A ideia não é começar complexo.
-
-A ideia é começar certo.
-
-E evoluir com segurança.
 
 ---
 
 <p align="center">
-  <b>Versão atual: V1.1</b><br>
+  <b>Versão atual: V1.2</b><br>
   Projeto interno • Busca Documental Corporativa
 </p>
