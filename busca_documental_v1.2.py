@@ -1,8 +1,7 @@
 import os
-import pandas as pd
 import subprocess
 import tkinter as tk
-from tkinter import messagebox, scrolledtext
+from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
 
 # =============================
@@ -14,20 +13,22 @@ REDE_PATH = r"\\Srv-fs-01.whebdc.com.br\fs2\EMR\Oficializacoes_Uso"
 # Extensões permitidas (V1 simples)
 EXTENSOES = [".pdf", ".txt", ".docx"]
 
-# Arquivo de base de busca
-BASE_BUSCA_FILE = r"C:\Users\320128547\Desktop\OFU Finder\funcoes.xlsx"
+# Versão da aplicação
+VERSAO = "V1.2"
 
 
 # =============================
 # FUNÇÕES
 # =============================
 
-def autenticar_rede(usuario, senha):
+def autenticar_rede(usuario, senha, dominio):
     """
     Faz autenticação simples na rede usando net use.
     """
     try:
-        comando = f'net use {REDE_PATH} /user:{usuario} {senha}'
+        usuario_completo = f"{dominio}\\{usuario}"
+
+        comando = f'net use {REDE_PATH} /user:{usuario_completo} {senha}'
         resultado = subprocess.run(
             comando,
             shell=True,
@@ -44,31 +45,35 @@ def autenticar_rede(usuario, senha):
         return False, str(e)
 
 
-
-def carregar_base_busca():
+def atualizar_campo_dominio(event=None):
     """
-    Lê a base de busca em Excel.
-    Estrutura esperada:
-    coluna 1: termo_digitado
-    coluna 2: variacoes_busca
+    Exibe ou oculta o campo de domínio personalizado.
     """
-    try:
-        if not os.path.exists(BASE_BUSCA_FILE):
-            return {}
+    opcao = combo_dominio.get()
 
-        df = pd.read_excel(BASE_BUSCA_FILE)
-        base = {}
+    if opcao == "outro":
+        label_outro_dominio.pack(pady=(5, 0))
+        entry_outro_dominio.pack()
+    else:
+        label_outro_dominio.pack_forget()
+        entry_outro_dominio.pack_forget()
 
-        for _, row in df.iterrows():
-            termo = str(row["termo_digitado"]).strip().lower()
-            variacoes = str(row["variacoes_busca"]).strip().lower().split(";")
-            base[termo] = [v.strip() for v in variacoes if v.strip()]
 
-        return base
+def obter_dominio():
+    """
+    Retorna o domínio selecionado.
+    """
+    opcao = combo_dominio.get()
 
-    except Exception as e:
-        print(f"Erro ao carregar base de busca: {e}")
-        return {}
+    if opcao == "whebdc":
+        return "whebdc"
+
+    dominio_personalizado = entry_outro_dominio.get().strip()
+
+    if not dominio_personalizado:
+        return None
+
+    return dominio_personalizado
 
 
 def localizar_pasta_cliente(nome_cliente):
@@ -92,7 +97,6 @@ def localizar_pasta_cliente(nome_cliente):
         return None
 
 
-
 def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
     """
     V1 SIMPLES:
@@ -102,28 +106,20 @@ def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
     """
     resultados = []
 
-    base = carregar_base_busca()
-
-    if termo_busca.lower() in base:
-        termos_para_busca = [termo_busca.lower()] + base[termo_busca.lower()]
-    else:
-        termos_para_busca = [termo_busca.lower()]
-
-    for root, _, files in os.walk(pasta_cliente):
+    for root_dir, _, files in os.walk(pasta_cliente):
         for arquivo in files:
-            caminho = os.path.join(root, arquivo)
+            caminho = os.path.join(root_dir, arquivo)
             ext = Path(caminho).suffix.lower()
 
             if ext not in EXTENSOES:
                 continue
 
-            # V1 funcional: leitura direta apenas TXT
             if ext == ".txt":
                 try:
                     with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
                         conteudo = f.read()
 
-                        if any(t in conteudo.lower() for t in termos_para_busca):
+                        if termo_busca.lower() in conteudo.lower():
                             trecho = conteudo[:500]
                             resultados.append(
                                 f"\nArquivo: {caminho}\n"
@@ -134,7 +130,6 @@ def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
                     pass
 
             else:
-                # PDF/DOCX ficam preparados para V2
                 resultados.append(
                     f"\nArquivo encontrado (leitura futura V2): {caminho}\n"
                     f"Tipo: {ext}\n"
@@ -145,39 +140,63 @@ def buscar_nome_em_arquivos(pasta_cliente, termo_busca):
     return resultados
 
 
-
 def executar_busca():
     usuario = entry_usuario.get().strip()
     senha = entry_senha.get().strip()
     cliente = entry_cliente.get().strip()
     nome_busca = entry_nome.get().strip()
+    dominio = obter_dominio()
 
     if not all([usuario, senha, cliente, nome_busca]):
         messagebox.showwarning("Atenção", "Preencha todos os campos.")
+        return
+
+    if not dominio:
+        messagebox.showwarning(
+            "Atenção",
+            "Informe o domínio de rede."
+        )
         return
 
     resultado_texto.delete("1.0", tk.END)
     resultado_texto.insert(tk.END, "Autenticando na rede...\n")
     root.update()
 
-    ok, msg = autenticar_rede(usuario, senha)
+    ok, msg = autenticar_rede(usuario, senha, dominio)
 
     if not ok:
         messagebox.showerror("Erro de autenticação", msg)
         return
 
-    resultado_texto.insert(tk.END, "Autenticação realizada com sucesso.\n\n")
-    resultado_texto.insert(tk.END, f"Procurando pasta do cliente: {cliente}\n")
+    resultado_texto.insert(
+        tk.END,
+        f"Autenticação realizada com sucesso ({dominio}\\{usuario}).\n\n"
+    )
+
+    resultado_texto.insert(
+        tk.END,
+        f"Procurando pasta do cliente: {cliente}\n"
+    )
     root.update()
 
     pasta = localizar_pasta_cliente(cliente)
 
     if not pasta:
-        messagebox.showinfo("Não encontrado", "Pasta do cliente não localizada.")
+        messagebox.showinfo(
+            "Não encontrado",
+            "Pasta do cliente não localizada."
+        )
         return
 
-    resultado_texto.insert(tk.END, f"Pasta encontrada:\n{pasta}\n\n")
-    resultado_texto.insert(tk.END, f"Buscando por: {nome_busca}\n")
+    resultado_texto.insert(
+        tk.END,
+        f"Pasta encontrada:\n{pasta}\n\n"
+    )
+
+    resultado_texto.insert(
+        tk.END,
+        f"Buscando por: {nome_busca}\n"
+    )
     resultado_texto.insert(tk.END, "Aguarde...\n\n")
     root.update()
 
@@ -188,7 +207,10 @@ def executar_busca():
         for item in resultados:
             resultado_texto.insert(tk.END, item)
     else:
-        resultado_texto.insert(tk.END, "Nenhum resultado encontrado.\n")
+        resultado_texto.insert(
+            tk.END,
+            "Nenhum resultado encontrado.\n"
+        )
 
 
 # =============================
@@ -199,30 +221,44 @@ root = tk.Tk()
 root.title("Busca Documental V1")
 root.geometry("800x650")
 
-VERSAO_ATUAL = "Versão atual: V1.1"
+# -----------------------------
+# DOMÍNIO + USUÁRIO
+# -----------------------------
 
-# Login
+tk.Label(root, text="Domínio de Rede").pack(pady=(10, 0))
+
+combo_dominio = ttk.Combobox(
+    root,
+    values=["whebdc", "outro"],
+    state="readonly",
+    width=20
+)
+combo_dominio.pack()
+combo_dominio.set("whebdc")
+combo_dominio.bind("<<ComboboxSelected>>", atualizar_campo_dominio)
+
+label_outro_dominio = tk.Label(root, text="Informe o domínio")
+entry_outro_dominio = tk.Entry(root, width=50)
 
 tk.Label(root, text="Usuário de Rede").pack(pady=(10, 0))
 entry_usuario = tk.Entry(root, width=50)
 entry_usuario.pack()
 
-
 tk.Label(root, text="Senha").pack(pady=(10, 0))
 entry_senha = tk.Entry(root, width=50, show="*")
 entry_senha.pack()
 
-# Busca
+# -----------------------------
+# BUSCA
+# -----------------------------
 
 tk.Label(root, text="Nome do Cliente").pack(pady=(20, 0))
 entry_cliente = tk.Entry(root, width=60)
 entry_cliente.pack()
 
-
 tk.Label(root, text="Nome a Buscar").pack(pady=(10, 0))
 entry_nome = tk.Entry(root, width=60)
 entry_nome.pack()
-
 
 btn_buscar = tk.Button(
     root,
@@ -233,12 +269,20 @@ btn_buscar = tk.Button(
 )
 btn_buscar.pack(pady=20)
 
-
-resultado_texto = scrolledtext.ScrolledText(root, width=90, height=20)
+resultado_texto = scrolledtext.ScrolledText(
+    root,
+    width=90,
+    height=20
+)
 resultado_texto.pack(padx=10, pady=10)
 
-label_versao = tk.Label(root, text=VERSAO_ATUAL)
-label_versao.pack(pady=(0, 10))
-
+# Rodapé com versão
+rodape = tk.Label(
+    root,
+    text=f"Versão {VERSAO}",
+    font=("Arial", 9),
+    fg="gray"
+)
+rodape.pack(side="bottom", pady=5)
 
 root.mainloop()
