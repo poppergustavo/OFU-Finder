@@ -253,7 +253,7 @@ resultado_texto = scrolledtext.ScrolledText(
     frame,
     height=20,
     bg="black",
-    fg="lime",
+    fg="white",
     font=("Consolas", 10)
 )
 resultado_texto.pack(fill="both", expand=True)
