@@ -3,11 +3,8 @@
   "name": "Busca Documental Checker",
   "version": "3.0",
   "description": "Valida aplicação Python ativa e lê dados da tela.",
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": [
-    "http://127.0.0.1:8765/*",
-    "<all_urls>"
-  ],
+  "permissions": [    "storage",    "activeTab",    "scripting"  ],
+  "host_permissions": [    "http://127.0.0.1:8765/*",    "<all_urls>"  ],
   "action": {
     "default_popup": "popup.html"
   },
