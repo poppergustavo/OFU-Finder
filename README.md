@@ -15,7 +15,7 @@ A aplicação não precisa de instalação de Python na máquina do usuário.
 Basta executar o arquivo:
 
 ```text
-busca_documental_v1.5.exe
+busca_documental_v1.6.exe
 ```
 
 Este executável já contém todas as dependências necessárias para funcionamento.
@@ -35,23 +35,23 @@ Exemplo:
 ```text
 Projeto/
 ├── dist/
-│   └── busca_documental_v1.5.exe
+│   └── busca_documental_v1.6.exe
 ├── build/
-├── busca_documental_v1.5.py
+├── busca_documental_v1.6.py
 └── README_EXECUTAVEL.md
 ```
 
 O arquivo que deve ser utilizado e distribuído é:
 
 ```text
-dist\busca_documental_v1.5.exe
+dist\busca_documental_v1.6.exe
 ```
 
 ---
 
 ## Como utilizar
 
-1. Abra o executável `busca_documental_v1.5.exe`
+1. Abra o executável `busca_documental_v1.6.exe`
 2. Preencha os campos obrigatórios:
 
    * Usuário de Rede
