@@ -3,6 +3,25 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from pathlib import Path
+from flask import Flask, jsonify
+import threading
+
+app = Flask(__name__)
+
+@app.route('/status')
+def status():
+    return jsonify({
+        "status": "online",
+        "app": "busca_documental_v1.6.py"
+    })
+
+
+def iniciar_servidor_local():
+    app.run(host="127.0.0.1", port=8765, debug=False, use_reloader=False)
+
+
+threading.Thread(target=iniciar_servidor_local, daemon=True).start()
+
 
 # =============================
 # CONFIGURAÇÃO
