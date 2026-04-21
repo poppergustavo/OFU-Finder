@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-funcional-success" />
-  <img src="https://img.shields.io/badge/version-V1.5-blue" />
+  <img src="https://img.shields.io/badge/version-V1.6-blue" />
   <img src="https://img.shields.io/badge/formato-.exe-lightgrey" />
 </p>
 
